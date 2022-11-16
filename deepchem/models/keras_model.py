@@ -644,10 +644,10 @@ class KerasModel(Model):
         output_values = self._output_functions[key](inputs)
       else:
         output_values = self._compute_model(inputs)
-        #if uncertainty:
-        #  output_values = self._compute_model(inputs, training=True)
-        #else:
-        #  output_values = self._compute_model(inputs)
+        if uncertainty:
+          output_values = self._compute_model(inputs, training=True)
+        else:
+          output_values = self._compute_model(inputs)
         if tf.is_tensor(output_values):
           output_values = [output_values]
         output_values = [t.numpy() for t in output_values]
