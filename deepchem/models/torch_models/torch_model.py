@@ -569,6 +569,14 @@ class TorchModel(Model):
         )
     self._ensure_built()
     self.model.eval()
+
+    # Turn on dropout layers when predicting uncertainty.
+    # Copied from: https://stackoverflow.com/questions/63285197/measuring-uncertainty-using-mc-dropout-on-pytorch
+    if uncertainty:
+      for m in self.model.modules():
+        if m.__class__.__name__.startswith('Dropout'):
+            m.train()
+
     for batch in generator:
       inputs, labels, weights = batch
       inputs, _, _ = self._prepare_batch((inputs, None, None))
@@ -789,6 +797,7 @@ class TorchModel(Model):
                                          mode='uncertainty',
                                          pad_batches=False)
       results = self._predict(generator, [], True, None)
+      print('results:', *results)
       if len(sum_pred) == 0:
         for p, v in results:
           sum_pred.append(p)

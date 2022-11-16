@@ -644,6 +644,10 @@ class KerasModel(Model):
         output_values = self._output_functions[key](inputs)
       else:
         output_values = self._compute_model(inputs)
+        #if uncertainty:
+        #  output_values = self._compute_model(inputs, training=True)
+        #else:
+        #  output_values = self._compute_model(inputs)
         if tf.is_tensor(output_values):
           output_values = [output_values]
         output_values = [t.numpy() for t in output_values]
@@ -693,9 +697,9 @@ class KerasModel(Model):
       return final_results
 
   @tf.function(experimental_relax_shapes=True)
-  def _compute_model(self, inputs: Sequence):
+  def _compute_model(self, inputs: Sequence, training=False):
     """Evaluate the model for a set of inputs."""
-    return self.model(inputs, training=False)
+    return self.model(inputs, training)
 
   def predict_on_generator(
       self,
@@ -883,6 +887,8 @@ class KerasModel(Model):
                                          mode='uncertainty',
                                          pad_batches=False)
       results = self._predict(generator, [], None, True, None)
+      # Results should be: predictions, variances.
+      print('results:', *results)
       if len(sum_pred) == 0:
         for p, v in results:
           sum_pred.append(p)
@@ -895,14 +901,17 @@ class KerasModel(Model):
           sum_var[j] += v
     output = []
     std = []
+    var = []
     for i in range(len(sum_pred)):
       p = sum_pred[i] / masks
       output.append(p)
       std.append(np.sqrt(sum_sq_pred[i] / masks - p * p + sum_var[i] / masks))
+      v = sum_var[i] / masks
+      var.append(v)
     if len(output) == 1:
-      return (output[0], std[0])
+      return (output[0], std[0], var[0])
     else:
-      return list(zip(output, std))
+      return list(zip(output, std, var))
 
   def evaluate_generator(self,
                          generator: Iterable[Tuple[Any, Any, Any]],

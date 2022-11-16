@@ -265,7 +265,7 @@ class WeaveModel(KerasModel):
         if dropout > 0.0:
           layer = Dropout(rate=dropout)(layer)
         if batch_normalize:
-          # Should this allow for training?
+          # Should this allow for training? - Think this is fine as training=True will be passed in call?
           layer = BatchNormalization(**batch_normalize_kwargs)(layer)
         layer = Activation(activation_fn)(layer)
         input_layer = layer
@@ -1021,6 +1021,19 @@ class GraphConvModel(KerasModel):
         for i in range(1, len(multiConvMol.get_deg_adjacency_lists())):
           inputs.append(multiConvMol.get_deg_adjacency_lists()[i])
         yield (inputs, [y_b], [w_b])
+
+    # Wrapper around predict_uncertainty of KerasModel to allow
+    # batchnorm layers to be frozen.
+    def predict_uncertainty(self,
+                            dataset: Dataset,
+                            masks: int = 50) -> OneOrMany[Tuple[np.ndarray, np.ndarray]]:
+      for bn in self.model.batch_norms:
+        bn.trainable = False
+      super(GraphConvModel, self).predict_uncertainty(self,
+                                                      dataset,
+                                                      masks)
+      for bn in self.model.batch_norms:
+        bn.trainable = True
 
 
 class MPNNModel(KerasModel):

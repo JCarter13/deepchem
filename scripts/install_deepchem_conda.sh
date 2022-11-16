@@ -17,7 +17,7 @@ eval "$(conda shell.bash hook)"
 
 # Create deepchem environment
 conda config --set always_yes yes
-conda create --name deepchem python=$1
+conda create --name deepchem2 python=$1
 conda install -c conda-forge conda-merge
 
 dir="$PWD/requirements"
